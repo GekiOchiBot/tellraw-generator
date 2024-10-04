@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tellrawコマンドジェネレーター</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label, textarea, input, select {
+            display: block;
+            margin: 10px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+        }
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px; /* 角を丸くする */
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+
+        .item-set.selected {
+            border: 2px solid #007bff; /* 選択状態のアイテムの枠 */
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); /* ちょっとした影を追加 */
+        }
+
+        .hidden {
+            display: none;
+        }
+        .item-set {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>マイクラ Tellraw コマンドジェネレーター</h1>
+    
+    <div id="item-container">
+    </div>
+
+    <button id="plus">アイテムを追加</button>
+    <button id="generate">コマンド生成</button>
+
+    <h2>生成されたTellrawコマンド</h2>
+    <textarea id="output" readonly></textarea>
+
+    <script>
+// 変数を追加して選択中のアイテムセットを記録する
+let selectedItemSet = null;
+
+function getRandomPastelColor(alpha) {
+    const r = Math.floor(Math.random() * 137 + 128); // 128～255の範囲
+    const g = Math.floor(Math.random() * 137 + 128);
+    const b = Math.floor(Math.random() * 137 + 128);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`; // アルファを指定
+}
+
+// クリックイベントを追加
+function addItemSet() {
+    const itemContainer = document.getElementById('item-container');
+
+    const newItemSet = document.createElement('div');
+    newItemSet.classList.add('item-set');
+
+    // 透明度を0.5に設定してパステルカラーを適用
+    newItemSet.style.backgroundColor = getRandomPastelColor(0.5); // ここで透明度を指定
+    newItemSet.innerHTML = `
+        <label for="types">テキストタイプ:</label>
+        <select class="types">
+            <option value="txt">テキスト</option>
+            <option value="scr">スコア</option>
+            <option value="slc">セレクター</option>
+        </select>
+        
+        <input type="text" class="text" placeholder="ここにテキストを入力">
+        <input type="text" class="score hidden" placeholder="ここにスコアオブジェクト名を入力">
+        <input type="text" class="score hidden" placeholder="ここにスコアを持っているセレクタを入力">
+        <input type="text" class="selector hidden" placeholder="ここにセレクタを入力">
+        
+        <label class="color-label hidden">文字色:</label>
+        <select class="color hidden">
+            <option value="">デフォルト</option>
+            <option value="§0">黒</option>
+            <option value="§1">濃い青</option>
+            <option value="§2">濃い緑</option>
+            <option value="§3">濃い水色</option>
+            <option value="§4">濃い赤</option>
+            <option value="§5">濃い紫</option>
+            <option value="§6">金色</option>
+            <option value="§7">灰色</option>
+            <option value="§8">濃い灰色</option>
+            <option value="§9">青</option>
+            <option value="§a">緑</option>
+            <option value="§b">水色</option>
+            <option value="§c">赤</option>
+            <option value="§d">ピンク</option>
+            <option value="§e">黄色</option>
+            <option value="§f">白</option>
+            <option value="§g">明るい緑</option>
+        </select>
+        <button class="move-up hidden">↑ 上に移動</button>
+        <button class="move-down hidden">↓ 下に移動</button>
+        <button class="delete hidden">削除</button>
+    `;
+
+    // アイテムセットにクリックイベントを追加
+    newItemSet.addEventListener('click', function() {
+        // すべてのアイテムセットから選択状態を解除
+        if (selectedItemSet) {
+            selectedItemSet.classList.remove('selected');
+            selectedItemSet.querySelector('.move-up').classList.add('hidden');
+            selectedItemSet.querySelector('.move-down').classList.add('hidden');
+            selectedItemSet.querySelector('.delete').classList.add('hidden');
+        }
+
+        // 現在のアイテムセットを選択状態にする
+        selectedItemSet = newItemSet;
+        newItemSet.classList.add('selected');
+        newItemSet.querySelector('.move-up').classList.remove('hidden');
+        newItemSet.querySelector('.move-down').classList.remove('hidden');
+        newItemSet.querySelector('.delete').classList.remove('hidden');
+    });
+
+    // 入れ替えボタンの機能を追加
+    newItemSet.querySelector('.move-up').addEventListener('click', function(event) {
+        event.stopPropagation(); // クリックイベントが親要素に伝播しないようにする
+        if (newItemSet.previousElementSibling) {
+            itemContainer.insertBefore(newItemSet, newItemSet.previousElementSibling);
+        }
+    });
+
+    newItemSet.querySelector('.move-down').addEventListener('click', function(event) {
+        event.stopPropagation();
+        if (newItemSet.nextElementSibling) {
+            itemContainer.insertBefore(newItemSet.nextElementSibling, newItemSet);
+        }
+    });
+
+    // 削除ボタンの機能を追加
+    newItemSet.querySelector('.delete').addEventListener('click', function(event) {
+        event.stopPropagation();
+        itemContainer.removeChild(newItemSet);
+        selectedItemSet = null; // 選択状態をリセット
+    });
+
+    // 新しいセットにイベントリスナーを追加
+    const types = newItemSet.querySelector('.types');
+    types.addEventListener('change', function() {
+        const textField = newItemSet.querySelector('.text');
+        const scoreFields = newItemSet.querySelectorAll('.score');
+        const selectorField = newItemSet.querySelector('.selector');
+        const colorField = newItemSet.querySelector('.color');
+        const colorLabel = newItemSet.querySelector('.color-label');
+
+        // 初期化：すべて非表示
+        textField.classList.add('hidden');
+        scoreFields.forEach(field => field.classList.add('hidden'));
+        selectorField.classList.add('hidden');
+        colorField.classList.add('hidden');
+        colorLabel.classList.add('hidden');
+
+        // 選択に応じて表示する要素を切り替える
+        const selectedValue = this.value;
+        switch (selectedValue) {
+            case "txt":
+                textField.classList.remove('hidden');
+                colorField.classList.remove('hidden');
+                colorLabel.classList.remove('hidden');
+                break;
+            case "scr":
+                scoreFields[0].classList.remove('hidden'); // スコアオブジェクト名
+                scoreFields[1].classList.remove('hidden'); // スコアを持っているセレクタ
+                break;
+            case "slc":
+                selectorField.classList.remove('hidden');
+                break;
+        }
+    });
+
+    // アイテムを追加
+    itemContainer.appendChild(newItemSet);
+
+    // 追加された新しいセットのイベントリスナーをトリガー
+    newItemSet.querySelector('.types').dispatchEvent(new Event('change'));
+}
+
+        window.onload = addItemSet
+
+        document.getElementById('plus').addEventListener('click', addItemSet);
+
+        document.getElementById('generate').addEventListener('click', function() {
+    const itemSets = document.getElementsByClassName('item-set');
+    let tellrawCommand = `/tellraw @a {"rawtext":[`;
+
+    const items = []; // テキストアイテムを一時的に保存する配列
+
+    Array.from(itemSets).forEach((itemSet) => {
+        const textField = itemSet.querySelector('.text:not(.hidden)');
+        const scoreFields = itemSet.querySelectorAll('.score:not(.hidden)');
+        const selectorField = itemSet.querySelector('.selector:not(.hidden)');
+        
+        let text = "";
+        let color = "";
+
+        if (textField) {
+            text = textField.value;
+            color = itemSet.querySelector('.color:not(.hidden)')?.value || ""; // 存在確認を追加
+            text = color + text; // 色をテキストに追加
+            items.push(`{"text":"${text}"}`); // テキストを配列に追加
+        } else if (scoreFields.length > 0) {
+            const scoreObject = scoreFields[0].value; // スコアオブジェクト名
+            const scoreSelector = scoreFields[1].value; // スコアを持っているセレクタ
+            items.push(`{"score":{"name":"${scoreSelector}","objective":"${scoreObject}"}}`); // スコアを配列に追加
+        } else if (selectorField) {
+            const selector = selectorField.value; // セレクター
+            items.push(`{"selector":"${selector}"}`); // セレクターを配列に追加
+        }
+    });
+
+    // 配列の内容をカンマ区切りで結合してコマンドに追加
+    tellrawCommand += items.join(',') + ']}';
+    document.getElementById('output').value = tellrawCommand;
+});
+
+
+        // 最初のセットのイベントリスナーを追加
+        document.querySelector('.types').dispatchEvent(new Event('change'));
+
+
+    </script>
+</body>
+</html>
