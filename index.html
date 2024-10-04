@@ -45,8 +45,21 @@
     </style>
 </head>
 <body>
-    <h1>マイクラ Tellraw コマンドジェネレーター</h1>
-    
+    <h1>rawtextジェネレーター</h1>
+
+    <label for="command">コマンド:</label>
+    <select class="command" id="command">
+        <option value="tellraw">tellraw</option>
+        <option value="titleraw">titleraw</option>
+    </select>
+
+    <label for="title-type" id="title-type-label" class="hidden">タイトルタイプ:</label>
+    <select class="title-type" id="title-type" class="hidden">
+        <option value="title">title</option>
+        <option value="subtitle">subtitle</option>
+        <option value="actionbar">actionbar</option>
+    </select>
+
     <div id="item-container">
     </div>
 
@@ -189,55 +202,80 @@ function addItemSet() {
         }
     });
 
-    // アイテムを追加
     itemContainer.appendChild(newItemSet);
-
-    // 追加された新しいセットのイベントリスナーをトリガー
-    newItemSet.querySelector('.types').dispatchEvent(new Event('change'));
 }
 
-        window.onload = addItemSet
+// コマンド生成の関数
+function generateCommand() {
+    const command = document.getElementById('command').value;
+    let output = "";
 
-        document.getElementById('plus').addEventListener('click', addItemSet);
+    if (command === "titleraw") {
+        const titleType = document.getElementById('title-type').value;
+        output += `${command} @a ${titleType} `;
+    } else {
+        output += `${command} @a `;
+    }
 
-        document.getElementById('generate').addEventListener('click', function() {
-    const itemSets = document.getElementsByClassName('item-set');
-    let tellrawCommand = `/tellraw @a {"rawtext":[`;
-
-    const items = []; // テキストアイテムを一時的に保存する配列
-
-    Array.from(itemSets).forEach((itemSet) => {
-        const textField = itemSet.querySelector('.text:not(.hidden)');
-        const scoreFields = itemSet.querySelectorAll('.score:not(.hidden)');
-        const selectorField = itemSet.querySelector('.selector:not(.hidden)');
-        
+    const itemSets = document.querySelectorAll('.item-set');
+    itemSets.forEach(itemSet => {
+        const type = itemSet.querySelector('.types').value;
         let text = "";
-        let color = "";
+        let color = itemSet.querySelector('.color').value;
 
-        if (textField) {
-            text = textField.value;
-            color = itemSet.querySelector('.color:not(.hidden)')?.value || ""; // 存在確認を追加
-            text = color + text; // 色をテキストに追加
-            items.push(`{"text":"${text}"}`); // テキストを配列に追加
-        } else if (scoreFields.length > 0) {
-            const scoreObject = scoreFields[0].value; // スコアオブジェクト名
-            const scoreSelector = scoreFields[1].value; // スコアを持っているセレクタ
-            items.push(`{"score":{"name":"${scoreSelector}","objective":"${scoreObject}"}}`); // スコアを配列に追加
-        } else if (selectorField) {
-            const selector = selectorField.value; // セレクター
-            items.push(`{"selector":"${selector}"}`); // セレクターを配列に追加
+        switch (type) {
+            case "txt":
+                text = itemSet.querySelector('.text').value;
+                break;
+            case "scr":
+                const scoreObject = itemSet.querySelector('.score').value;
+                const scoreSelector = itemSet.querySelector('.score:nth-of-type(2)').value;
+                text = `{"score":{"name":"${scoreSelector}","objective":"${scoreObject}"}}`;
+                break;
+            case "slc":
+                text = itemSet.querySelector('.selector').value;
+                break;
+        }
+
+        if (color) {
+            output += `{"text":"${text}","color":"${color}"},`;
+        } else {
+            output += `{"text":"${text}"},`;
         }
     });
 
-    // 配列の内容をカンマ区切りで結合してコマンドに追加
-    tellrawCommand += items.join(',') + ']}';
-    document.getElementById('output').value = tellrawCommand;
+    // 最後のカンマを削除
+    output = output.slice(0, -1);
+    output += "]";
+
+    document.getElementById('output').value = output;
+}
+
+// イベントリスナーを追加
+document.getElementById('plus').addEventListener('click', addItemSet);
+document.getElementById('generate').addEventListener('click', generateCommand);
+
+// コマンドの変更イベントを追加
+document.getElementById('command').addEventListener('change', function() {
+    const command = this.value;
+    const titleTypeLabel = document.getElementById('title-type-label');
+    const titleTypeSelect = document.getElementById('title-type');
+
+    if (command === "titleraw") {
+        titleTypeLabel.classList.remove('hidden');
+        titleTypeSelect.classList.remove('hidden');
+    } else {
+        titleTypeLabel.classList.add('hidden');
+        titleTypeSelect.classList.add('hidden');
+    }
 });
+window.onload = function(){
+    addItemSet()
+    
+    document.getElementById('title-type-label').classList.add('hidden');
+    document.getElementById('title-type').classList.add('hidden');
 
-
-        // 最初のセットのイベントリスナーを追加
-        document.querySelector('.types').dispatchEvent(new Event('change'));
-
+}
 
     </script>
 </body>
