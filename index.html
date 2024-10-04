@@ -231,12 +231,12 @@ function generateCommand() {
             case "scr":
                 const scoreObject = itemSet.querySelector('.score').value;
                 const scoreSelector = itemSet.querySelector('.score:nth-of-type(2)').value;
-                text = `{"score":{"name":"${scoreSelector}","objective":"${scoreObject}"}}`;
+                text = `{"score":{"name":"${scoreSelector}","objective":"${scoreObject}"}},`;
                 output += `${text}`;
                 break;
             case "slc":
                 text = itemSet.querySelector('.selector').value;
-                output += `{"selector":"${text}"}`;
+                output += `{"selector":"${text}"},`;
                 break;
         }
     });
