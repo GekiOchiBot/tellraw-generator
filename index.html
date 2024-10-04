@@ -212,9 +212,9 @@ function generateCommand() {
 
     if (command === "titleraw") {
         const titleType = document.getElementById('title-type').value;
-        output += `${command} @a ${titleType} `;
+        output += `${command} @a ${titleType} {"rawtext":[`;
     } else {
-        output += `${command} @a `;
+        output += `${command} @a {"rawtext":[`;
     }
 
     const itemSets = document.querySelectorAll('.item-set');
@@ -246,7 +246,7 @@ function generateCommand() {
 
     // 最後のカンマを削除
     output = output.slice(0, -1);
-    output += "]";
+    output += "]}";
 
     document.getElementById('output').value = output;
 }
